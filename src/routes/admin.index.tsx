@@ -1,8 +1,8 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { toast } from "sonner";
 import * as XLSX from "xlsx";
-import { Download, Trash2, Plus, LogOut, RefreshCw, ShieldAlert } from "lucide-react";
+import { Download, Trash2, Plus, LogOut, RefreshCw, ShieldAlert, Upload, FileSpreadsheet } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/admin/")({
@@ -32,6 +32,8 @@ function AdminDashboard() {
   const [rows, setRows] = useState<Enquiry[]>([]);
   const [loading, setLoading] = useState(false);
   const [showAdd, setShowAdd] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -121,6 +123,77 @@ function AdminDashboard() {
     toast.success("Excel downloaded");
   }
 
+  function downloadTemplate() {
+    const ws = XLSX.utils.json_to_sheet([
+      { name: "Rajesh Kumar", phone: "+91 98765 43210", message: "Need a car battery for Swift Dzire" },
+      { name: "Priya S", phone: "+91 98000 12345", message: "Inverter battery quote — 800VA" },
+    ]);
+    ws["!cols"] = [{ wch: 22 }, { wch: 18 }, { wch: 50 }];
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Enquiries");
+    XLSX.writeFile(wb, "enquiries-template.xlsx");
+    toast.success("Template downloaded");
+  }
+
+  async function handleBulkUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("File too large (max 5MB)");
+      e.target.value = "";
+      return;
+    }
+    setUploading(true);
+    try {
+      const buf = await file.arrayBuffer();
+      const wb = XLSX.read(buf, { type: "array" });
+      const sheet = wb.Sheets[wb.SheetNames[0]];
+      if (!sheet) throw new Error("No sheet found in file");
+      const raw = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, { defval: "" });
+      if (!raw.length) throw new Error("Sheet is empty");
+
+      // Normalize headers (case-insensitive). Accept name/phone/message variants.
+      const pick = (row: Record<string, unknown>, keys: string[]): string => {
+        for (const k of Object.keys(row)) {
+          if (keys.includes(k.trim().toLowerCase())) return String(row[k] ?? "").trim();
+        }
+        return "";
+      };
+
+      const rowsToInsert: { name: string; phone: string; message: string }[] = [];
+      const skipped: number[] = [];
+      raw.forEach((r, i) => {
+        const name = pick(r, ["name", "full name", "customer", "customer name"]).slice(0, 100);
+        const phone = pick(r, ["phone", "mobile", "contact", "phone number", "mobile number"]).slice(0, 30);
+        const message = pick(r, ["message", "enquiry", "notes", "details", "remarks"]).slice(0, 1000);
+        if (!name || !phone || !message) {
+          skipped.push(i + 2); // header is row 1
+          return;
+        }
+        rowsToInsert.push({ name, phone, message });
+      });
+
+      if (!rowsToInsert.length) {
+        throw new Error("No valid rows. Required columns: name, phone, message");
+      }
+      if (rowsToInsert.length > 1000) {
+        throw new Error("Too many rows (max 1000 per upload)");
+      }
+
+      const { error } = await supabase.from("enquiries").insert(rowsToInsert);
+      if (error) throw error;
+
+      const skipMsg = skipped.length ? ` ${skipped.length} skipped (missing fields).` : "";
+      toast.success(`Imported ${rowsToInsert.length} enquiries.${skipMsg}`);
+      load();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Upload failed");
+    } finally {
+      setUploading(false);
+      e.target.value = "";
+    }
+  }
+
   if (checking) {
     return (
       <section className="section-pad">
@@ -169,6 +242,24 @@ function AdminDashboard() {
             <button onClick={() => setShowAdd((v) => !v)} className="inline-flex items-center gap-2 rounded-md border border-border px-3 py-2 text-sm hover:bg-secondary">
               <Plus className="h-4 w-4" /> Add
             </button>
+            <button onClick={downloadTemplate} className="inline-flex items-center gap-2 rounded-md border border-border px-3 py-2 text-sm hover:bg-secondary">
+              <FileSpreadsheet className="h-4 w-4" /> Template
+            </button>
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploading}
+              className="inline-flex items-center gap-2 rounded-md border border-border px-3 py-2 text-sm hover:bg-secondary disabled:opacity-60"
+            >
+              <Upload className={`h-4 w-4 ${uploading ? "animate-pulse" : ""}`} />
+              {uploading ? "Uploading…" : "Bulk Upload"}
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".xlsx,.xls,.csv"
+              className="hidden"
+              onChange={handleBulkUpload}
+            />
             <button onClick={downloadExcel} className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-bold text-primary-foreground shadow-[var(--shadow-glow)] hover:scale-[1.02]">
               <Download className="h-4 w-4" /> Download Excel
             </button>
