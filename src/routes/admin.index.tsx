@@ -312,7 +312,26 @@ function AdminDashboard() {
           </form>
         )}
 
-        <div className="mt-6 overflow-x-auto rounded-xl border border-border bg-surface shadow-[var(--shadow-card)]">
+        <div className="mt-6 flex flex-wrap items-center gap-2">
+          <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Filter:</span>
+          {(["all", "new", "contacted", "closed"] as const).map((f) => {
+            const count = f === "all" ? rows.length : rows.filter((r) => r.status === f).length;
+            const active = statusFilter === f;
+            return (
+              <button
+                key={f}
+                onClick={() => setStatusFilter(f)}
+                className={`rounded-full border px-3 py-1 text-xs font-semibold capitalize transition-colors ${
+                  active ? "border-primary bg-primary text-primary-foreground" : "border-border bg-surface hover:bg-secondary"
+                }`}
+              >
+                {f} <span className="ml-1 opacity-70">({count})</span>
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="mt-4 overflow-x-auto rounded-xl border border-border bg-surface shadow-[var(--shadow-card)]">
           <table className="w-full text-sm">
             <thead className="bg-secondary text-left text-xs uppercase tracking-wider text-muted-foreground">
               <tr>
@@ -320,19 +339,31 @@ function AdminDashboard() {
                 <th className="px-4 py-3">Name</th>
                 <th className="px-4 py-3">Phone</th>
                 <th className="px-4 py-3">Message</th>
+                <th className="px-4 py-3">Status</th>
                 <th className="px-4 py-3 text-right">Actions</th>
               </tr>
             </thead>
             <tbody>
-              {rows.length === 0 && !loading && (
-                <tr><td colSpan={5} className="px-4 py-10 text-center text-muted-foreground">No enquiries yet.</td></tr>
+              {visibleRows.length === 0 && !loading && (
+                <tr><td colSpan={6} className="px-4 py-10 text-center text-muted-foreground">No enquiries to show.</td></tr>
               )}
-              {rows.map((r) => (
-                <tr key={r.id} className="border-t border-border align-top">
+              {visibleRows.map((r) => (
+                <tr key={r.id} className={`border-t border-border align-top ${r.status === "new" ? "bg-primary/[0.03]" : ""}`}>
                   <td className="whitespace-nowrap px-4 py-3 text-muted-foreground">{new Date(r.created_at).toLocaleString()}</td>
                   <td className="px-4 py-3 font-semibold">{r.name}</td>
                   <td className="whitespace-nowrap px-4 py-3"><a className="hover:text-primary" href={`tel:${r.phone}`}>{r.phone}</a></td>
                   <td className="px-4 py-3 max-w-md">{r.message}</td>
+                  <td className="px-4 py-3">
+                    <select
+                      value={r.status}
+                      onChange={(e) => handleStatusChange(r.id, e.target.value)}
+                      className={`rounded-full border px-2.5 py-1 text-xs font-semibold capitalize outline-none ${statusStyles[r.status] ?? statusStyles.new}`}
+                    >
+                      {STATUS_OPTIONS.map((s) => (
+                        <option key={s} value={s} className="bg-background text-foreground">{s}</option>
+                      ))}
+                    </select>
+                  </td>
                   <td className="px-4 py-3 text-right">
                     <button onClick={() => handleDelete(r.id)} className="inline-flex items-center gap-1 rounded-md border border-border px-2.5 py-1.5 text-xs text-destructive hover:bg-destructive/10">
                       <Trash2 className="h-3.5 w-3.5" /> Delete
