@@ -4,6 +4,7 @@ import { z } from "zod";
 import { toast } from "sonner";
 import { MapPin, Phone, Mail, Send } from "lucide-react";
 import { Reveal } from "@/components/Reveal";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/contact")({
   head: () => ({
@@ -43,12 +44,20 @@ function ContactPage() {
       return;
     }
     setSubmitting(true);
-    // Frontend-only: simulate send. Wire to backend later.
-    setTimeout(() => {
+    (async () => {
+      const { error } = await supabase.from("enquiries").insert({
+        name: parsed.data.name,
+        phone: parsed.data.phone,
+        message: parsed.data.message,
+      });
       setSubmitting(false);
+      if (error) {
+        toast.error("Couldn't send right now. Please try again or call us.");
+        return;
+      }
       toast.success("Thanks! We'll get back to you shortly.");
       form.reset();
-    }, 700);
+    })();
   }
 
   return (
