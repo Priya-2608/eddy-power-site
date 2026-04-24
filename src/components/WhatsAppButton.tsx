@@ -1,5 +1,5 @@
 // Floating WhatsApp CTA. Replace the phone number with the real one.
-const PHONE = "919345680990"; // country code + number, no +
+const PHONE = "918037973957"; // country code + number, no +
 const MESSAGE = "Hi Eddy Power Cell, I'd like to enquire about your batteries.";
 
 export function WhatsAppButton() {

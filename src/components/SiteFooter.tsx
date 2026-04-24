@@ -35,8 +35,8 @@ export function SiteFooter() {
           <h4 className="text-sm font-bold uppercase tracking-wider text-primary">Reach Us</h4>
           <ul className="mt-4 space-y-3 text-sm text-foreground/80">
             <li className="flex gap-2"><MapPin className="mt-0.5 h-4 w-4 shrink-0 text-primary" />Nambi Complex, Thillai Nagar, Hosur, Tamil Nadu – 635109</li>
-            <li className="flex gap-2"><Phone className="mt-0.5 h-4 w-4 shrink-0 text-primary" />+91 00000 00000</li>
-            <li className="flex gap-2"><Mail className="mt-0.5 h-4 w-4 shrink-0 text-primary" />info@eddypowercell.com</li>
+            <li className="flex gap-2"><Phone className="mt-0.5 h-4 w-4 shrink-0 text-primary" /><a href="tel:+918037973957" className="hover:text-primary">+91 80 3797 3957</a></li>
+            <li className="flex gap-2"><Mail className="mt-0.5 h-4 w-4 shrink-0 text-primary" /><a href="mailto:eddypowercell@gmail.com" className="hover:text-primary">eddypowercell@gmail.com</a></li>
           </ul>
         </div>
       </div>

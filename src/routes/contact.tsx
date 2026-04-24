@@ -105,8 +105,8 @@ function ContactPage() {
               <InfoCard icon={MapPin} title="Visit us">
                 Nambi Complex, Thillai Nagar,<br />Hosur, Tamil Nadu – 635109
               </InfoCard>
-              <InfoCard icon={Phone} title="Call us">+91 00000 00000</InfoCard>
-              <InfoCard icon={Mail} title="Email">info@eddypowercell.com</InfoCard>
+              <InfoCard icon={Phone} title="Call us"><a href="tel:+918037973957" className="hover:text-primary">+91 80 3797 3957</a></InfoCard>
+              <InfoCard icon={Mail} title="Email"><a href="mailto:eddypowercell@gmail.com" className="hover:text-primary">eddypowercell@gmail.com</a></InfoCard>
               <div className="overflow-hidden rounded-xl border border-border shadow-[var(--shadow-card)]">
                 <iframe
                   title="Eddy Power Cell, Hosur"
