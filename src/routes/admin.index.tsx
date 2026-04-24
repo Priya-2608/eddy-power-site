@@ -33,7 +33,17 @@ function AdminDashboard() {
   const [loading, setLoading] = useState(false);
   const [showAdd, setShowAdd] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<"all" | "new" | "contacted" | "closed">("all");
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  const STATUS_OPTIONS = ["new", "contacted", "closed"] as const;
+  const statusStyles: Record<string, string> = {
+    new: "bg-primary/15 text-primary border-primary/30",
+    contacted: "bg-blue-500/15 text-blue-400 border-blue-500/30",
+    closed: "bg-muted text-muted-foreground border-border",
+  };
+  const newCount = rows.filter((r) => r.status === "new").length;
+  const visibleRows = statusFilter === "all" ? rows : rows.filter((r) => r.status === statusFilter);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -82,6 +92,19 @@ function AdminDashboard() {
     if (error) return toast.error(error.message);
     setRows((r) => r.filter((x) => x.id !== id));
     toast.success("Deleted");
+  }
+
+  async function handleStatusChange(id: string, status: string) {
+    // Optimistic update
+    const prev = rows;
+    setRows((r) => r.map((x) => (x.id === id ? { ...x, status } : x)));
+    const { error } = await supabase.from("enquiries").update({ status }).eq("id", id);
+    if (error) {
+      setRows(prev);
+      toast.error(error.message);
+      return;
+    }
+    toast.success(`Marked as ${status}`);
   }
 
   async function handleAdd(e: React.FormEvent<HTMLFormElement>) {
@@ -233,7 +256,14 @@ function AdminDashboard() {
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
             <h1 className="text-3xl font-extrabold md:text-4xl">Enquiries</h1>
-            <p className="mt-1 text-sm text-muted-foreground">{rows.length} total</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {rows.length} total
+              {newCount > 0 && (
+                <span className="ml-2 inline-flex items-center gap-1 rounded-full bg-primary px-2.5 py-0.5 text-xs font-bold text-primary-foreground animate-pulse">
+                  {newCount} new
+                </span>
+              )}
+            </p>
           </div>
           <div className="flex flex-wrap gap-2">
             <button onClick={load} disabled={loading} className="inline-flex items-center gap-2 rounded-md border border-border px-3 py-2 text-sm hover:bg-secondary">
