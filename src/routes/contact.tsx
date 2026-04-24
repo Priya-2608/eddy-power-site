@@ -4,6 +4,7 @@ import { z } from "zod";
 import { toast } from "sonner";
 import { MapPin, Phone, Mail, Send } from "lucide-react";
 import { Reveal } from "@/components/Reveal";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/contact")({
   head: () => ({
@@ -43,12 +44,20 @@ function ContactPage() {
       return;
     }
     setSubmitting(true);
-    // Frontend-only: simulate send. Wire to backend later.
-    setTimeout(() => {
+    (async () => {
+      const { error } = await supabase.from("enquiries").insert({
+        name: parsed.data.name,
+        phone: parsed.data.phone,
+        message: parsed.data.message,
+      });
       setSubmitting(false);
+      if (error) {
+        toast.error("Couldn't send right now. Please try again or call us.");
+        return;
+      }
       toast.success("Thanks! We'll get back to you shortly.");
       form.reset();
-    }, 700);
+    })();
   }
 
   return (
@@ -105,8 +114,8 @@ function ContactPage() {
               <InfoCard icon={MapPin} title="Visit us">
                 Nambi Complex, Thillai Nagar,<br />Hosur, Tamil Nadu – 635109
               </InfoCard>
-              <InfoCard icon={Phone} title="Call us">+91 00000 00000</InfoCard>
-              <InfoCard icon={Mail} title="Email">info@eddypowercell.com</InfoCard>
+              <InfoCard icon={Phone} title="Call us"><a href="tel:+918037973957" className="hover:text-primary">+91 80 3797 3957</a></InfoCard>
+              <InfoCard icon={Mail} title="Email"><a href="mailto:eddypowercell@gmail.com" className="hover:text-primary">eddypowercell@gmail.com</a></InfoCard>
               <div className="overflow-hidden rounded-xl border border-border shadow-[var(--shadow-card)]">
                 <iframe
                   title="Eddy Power Cell, Hosur"
